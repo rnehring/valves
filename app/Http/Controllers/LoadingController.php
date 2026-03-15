@@ -23,15 +23,27 @@ class LoadingController extends Controller
     public function index(Request $request)
     {
         $user    = $this->currentUser();
-        $history = $this->cacheService->selectValveHistory(
+        $allowedSort = ['Key1','Date01','ShortChar15','ShortChar04','ShortChar05','Character01'];
+        $sortCol = $this->resolveSort($request, $allowedSort);
+        $sortDir = $this->resolveSortDir($request);
+        $perPage = $this->resolvePerPage($request);
+
+        $history = $this->cacheService->paginateValveHistory(
             $this->epicorCompany(),
             $this->epicorTable(),
-            $user['username']
+            $user['username'],
+            perPage: $perPage,
+            page:    $request->integer('page', 1),
+            sortCol: $sortCol ?: 'Key1',
+            sortDir: $sortDir
         );
 
         return view('loading.index', [
-            'records' => $history,
-            'user'    => $user,
+            'records'        => $history,
+            'user'           => $user,
+            'currentSort'    => $sortCol,
+            'currentDir'     => $sortDir,
+            'currentPerPage' => $perPage,
         ]);
     }
 

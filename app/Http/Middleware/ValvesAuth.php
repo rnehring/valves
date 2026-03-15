@@ -34,6 +34,15 @@ class ValvesAuth
 
             if ($user) {
                 $request->session()->put('user', $user->toArray());
+
+                // Also restore company session — same as normal login
+                if ($user->companyId > 0) {
+                    $company = \App\Models\Company::find($user->companyId);
+                    if ($company) {
+                        \App\Http\Controllers\AuthController::setCompanySession($request, $company);
+                    }
+                }
+
                 return $next($request);
             }
         }

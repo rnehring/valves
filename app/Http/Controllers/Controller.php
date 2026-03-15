@@ -69,4 +69,32 @@ abstract class Controller extends BaseController
     {
         session()->flash("message_$type", $message);
     }
+
+    /**
+     * Resolve per-page from request. 0 = all.
+     * Valid values: 25, 50, 100, 500, 0 (all). Defaults to 25.
+     */
+    protected function resolvePerPage(\Illuminate\Http\Request $request, int $default = 25): int
+    {
+        $val = (int) $request->input('per_page', $default);
+        return in_array($val, [25, 50, 100, 500, 0], true) ? $val : $default;
+    }
+
+    /**
+     * Resolve sort column from request, validated against a whitelist.
+     * Returns empty string if not set or not in whitelist.
+     */
+    protected function resolveSort(\Illuminate\Http\Request $request, array $allowed): string
+    {
+        $col = $request->input('sort', '');
+        return in_array($col, $allowed, true) ? $col : '';
+    }
+
+    /**
+     * Resolve sort direction from request.
+     */
+    protected function resolveSortDir(\Illuminate\Http\Request $request): string
+    {
+        return $request->input('dir', 'desc') === 'asc' ? 'asc' : 'desc';
+    }
 }

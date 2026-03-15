@@ -1,15 +1,15 @@
 @extends('layouts.app')
-@section('title', $record['id'] ? 'Edit Valve User' : 'Add Valve User')
+@section('title', $record ? 'Edit Valve User' : 'Add Valve User')
 
 @section('content')
-<div class="max-w-lg mx-auto">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ $record['id'] ? 'Edit Valve User' : 'Add Valve User' }}</h1>
+<div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ $record ? 'Edit Valve User' : 'Add Valve User' }}</h1>
     <p class="text-sm text-gray-500 mb-5 -mt-4">Valve users are factory floor workers who log into loading/unloading terminals.</p>
 
     <div class="bg-white rounded-xl shadow p-6">
         <form method="POST" action="{{ route('users.save-additional') }}" class="warn-leave">
             @csrf
-            <input type="hidden" name="id" value="{{ $record['id'] }}">
+            <input type="hidden" name="id" value="{{ $record->id ?? '' }}">
 
             @if($errors->any())
             <div class="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">

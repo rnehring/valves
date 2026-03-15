@@ -7,24 +7,26 @@
     <p class="text-sm text-gray-500 mt-1">Valves loaded but not yet unloaded</p>
 </div>
 
+@include('partials.per-page', ['currentPerPage' => $currentPerPage, 'records' => $records])
+
 @if(count($records) > 0)
 <div class="bg-white rounded-xl shadow overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700">
-            <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+            <thead class="text-xs bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th class="px-4 py-3 w-10"></th>
-                    <th class="px-4 py-3">Serial #</th>
-                    <th class="px-4 py-3">Date Loaded</th>
-                    <th class="px-4 py-3">Loaded By</th>
-                    <th class="px-4 py-3">Part #</th>
-                    <th class="px-4 py-3">Work Order</th>
-                    <th class="px-4 py-3">Description</th>
+                    <x-sort-th column="Key1"        label="Serial #"    :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Date01"      label="Date Loaded" :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar15" label="Loaded By"   :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar01" label="Part #"      :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar03" label="Work Order"  :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Character01" label="Description" :currentSort="$currentSort" :currentDir="$currentDir" />
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @foreach($records as $valve)
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="{{ $loop->even ? 'bg-gray-100' : 'bg-white' }} hover:bg-blue-50 transition">
                     <td class="px-4 py-3">
                         <a href="{{ route('unloading.edit', $valve->Key1) }}"
                            class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition"
@@ -35,7 +37,7 @@
                         </a>
                     </td>
                     <td class="px-4 py-3 font-mono font-semibold text-blue-700">{{ $valve->Key1 }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ $valve->getFormattedDateLoaded() }}</td>
+                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $valve->getFormattedDateLoaded() }}</td>
                     <td class="px-4 py-3">{{ $valve->ShortChar15 }}</td>
                     <td class="px-4 py-3">{{ $valve->ShortChar01 }}</td>
                     <td class="px-4 py-3">{{ $valve->ShortChar03 }}</td>
@@ -52,6 +54,12 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/>
     </svg>
     <p class="text-gray-500">No valves pending unloading.</p>
+</div>
+@endif
+
+@if($records->hasPages())
+<div class="mt-4">
+    {{ $records->links() }}
 </div>
 @endif
 @endsection

@@ -15,28 +15,34 @@
             <input type="text" name="search_serialNumber" value="{{ request('search_serialNumber') }}"
                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40">
         </div>
+        {{-- Preserve sort/dir/per_page across search --}}
+        <input type="hidden" name="sort"     value="{{ $currentSort }}">
+        <input type="hidden" name="dir"      value="{{ $currentDir }}">
+        <input type="hidden" name="per_page" value="{{ $currentPerPage }}">
         <button type="submit" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition">Search</button>
         <a href="{{ route('shell-testing.index') }}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Reset</a>
     </form>
 </div>
 
+@include('partials.per-page', ['currentPerPage' => $currentPerPage, 'records' => $records])
+
 @if(count($records) > 0)
 <div class="bg-white rounded-xl shadow overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700">
-            <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+            <thead class="text-xs bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th class="px-4 py-3 w-10"></th>
-                    <th class="px-4 py-3">Serial #</th>
-                    <th class="px-4 py-3">Date Loaded</th>
-                    <th class="px-4 py-3">Loaded By</th>
-                    <th class="px-4 py-3">Unloaded By</th>
-                    <th class="px-4 py-3">Description</th>
+                    <x-sort-th column="Key1"        label="Serial #"    :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Date01"      label="Date Loaded" :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar15" label="Loaded By"   :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar07" label="Unloaded By" :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Character01" label="Description" :currentSort="$currentSort" :currentDir="$currentDir" />
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @foreach($records as $valve)
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="{{ $loop->even ? 'bg-gray-100' : 'bg-white' }} hover:bg-blue-50 transition">
                     <td class="px-4 py-3">
                         <a href="{{ route('shell-testing.edit', $valve->Key1) }}"
                            class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition">
@@ -46,7 +52,7 @@
                         </a>
                     </td>
                     <td class="px-4 py-3 font-mono font-semibold text-blue-700">{{ $valve->Key1 }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ $valve->getFormattedDateLoaded() }}</td>
+                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $valve->getFormattedDateLoaded() }}</td>
                     <td class="px-4 py-3">{{ $valve->ShortChar15 }}</td>
                     <td class="px-4 py-3">{{ $valve->ShortChar07 }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ $valve->Character01 }}</td>
@@ -62,6 +68,12 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
     <p class="text-gray-500">No valves pending shell testing.</p>
+</div>
+@endif
+
+@if($records->hasPages())
+<div class="mt-4">
+    {{ $records->links() }}
 </div>
 @endif
 @endsection

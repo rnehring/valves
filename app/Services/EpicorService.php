@@ -377,6 +377,70 @@ class EpicorService
         );
     }
 
+    /**
+     * Get the part number for a job from Epicor's JobPart table.
+     * Always queries company 'AI' (Andronaco Inc.) since jobs live there.
+     */
+    public function getJobPartNumber(string $jobNumber): ?string
+    {
+        $job = $this->escape($jobNumber);
+        $row = $this->queryOne(
+            "SELECT TOP 1 PartNum FROM Epicor101.Erp.JobPart WHERE Company='AI' AND JobNum='{$job}'"
+        );
+        return $row['PartNum'] ?? null;
+    }
+
+    /**
+     * Get the value of a single field on a valve record.
+     */
+    public function getSerialField(
+        string $epicorCompany,
+        string $tableName,
+        string $serialNumber,
+        string $field = 'ShortChar18'
+    ): ?string {
+        $table   = $this->fullTableName($tableName);
+        $company = $this->escape($epicorCompany);
+        $serial  = $this->escape($serialNumber);
+        $row     = $this->queryOne(
+            "SELECT TOP 1 {$field} FROM {$table} WHERE Company='{$company}' AND Key1='{$serial}'"
+        );
+        return $row ? ($row[$field] ?? null) : null;
+    }
+
+    /**
+     * Update the job number field(s) on a serial in Epicor.
+     */
+    public function updateSerialJobNumber(
+        string $tableName,
+        string $epicorCompany,
+        string $serialNumber,
+        string $jobField,
+        string $jobNumber,
+        string $employee
+    ): bool {
+        $table   = $this->fullTableName($tableName);
+        $company = $this->escape($epicorCompany);
+        $serial  = $this->escape($serialNumber);
+        $job     = $this->escape($jobNumber);
+        $emp     = $this->escape($employee);
+        return $this->execute(
+            "UPDATE {$table} SET {$jobField}='{$job}', ShortChar20='{$emp}' WHERE Company='{$company}' AND Key1='{$serial}'"
+        );
+    }
+
+    /**
+     * Check if a serial number exists in Epicor.
+     */
+    public function serialExists(string $epicorCompany, string $tableName, string $serialNumber): bool
+    {
+        $table   = $this->fullTableName($tableName);
+        $company = $this->escape($epicorCompany);
+        $serial  = $this->escape($serialNumber);
+        $row     = $this->queryOne("SELECT TOP 1 Key1 FROM {$table} WHERE Company='{$company}' AND Key1='{$serial}'");
+        return $row !== null;
+    }
+
     // =========================================================================
     // Lifecycle
     // =========================================================================

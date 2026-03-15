@@ -20,33 +20,37 @@
     </div>
 </div>
 
+@include('partials.per-page', ['currentPerPage' => $currentPerPage, 'records' => $records])
+
 <div class="bg-white rounded-xl shadow overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700">
-            <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+            <thead class="text-xs bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th class="px-4 py-3 w-10"></th>
-                    <th class="px-4 py-3">Type</th>
-                    <th class="px-4 py-3">Username</th>
-                    <th class="px-4 py-3">First Name</th>
-                    <th class="px-4 py-3">Last Name</th>
-                    <th class="px-4 py-3 text-center">Active</th>
-                    <th class="px-4 py-3 text-center">Admin</th>
-                    <th class="px-4 py-3 text-center">Loading</th>
-                    <th class="px-4 py-3 text-center">Unloading</th>
-                    <th class="px-4 py-3 text-center">Shell Test</th>
-                    <th class="px-4 py-3 text-center">Lookup</th>
+                    <x-sort-th column="type"        label="Type"       :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="username"    label="Username"   :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="nameFirst"   label="First Name" :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="nameLast"    label="Last Name"  :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="isActive"    label="Active"     :currentSort="$currentSort" :currentDir="$currentDir" class="text-center" />
+                    <th class="px-4 py-3 whitespace-nowrap text-center text-gray-500">Admin</th>
+                    <th class="px-4 py-3 whitespace-nowrap text-center text-gray-500">Loading</th>
+                    <th class="px-4 py-3 whitespace-nowrap text-center text-gray-500">Unloading</th>
+                    <th class="px-4 py-3 whitespace-nowrap text-center text-gray-500">Shell Test</th>
+                    <th class="px-4 py-3 whitespace-nowrap text-center text-gray-500">Lookup</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @foreach($records as $record)
                 @php
-                    $type = $record['id'] >= 20000 ? 'Virtual' : ($record['id'] >= 10000 ? 'Valve' : 'Standard');
+                    $type      = $record['type'];
                     $editRoute = $record['id'] >= 20000
-                        ? route('users.edit-virtual', $record['id'])
-                        : ($record['id'] >= 10000 ? route('users.edit-additional', $record['id']) : route('users.edit', $record['id']));
+                        ? route('users.edit-virtual',    $record['id'])
+                        : ($record['id'] >= 10000
+                            ? route('users.edit-additional', $record['id'])
+                            : route('users.edit',            $record['id']));
                 @endphp
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="{{ $loop->even ? 'bg-gray-100' : 'bg-white' }} hover:bg-blue-50 transition">
                     <td class="px-4 py-3">
                         <a href="{{ $editRoute }}"
                            class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition">
@@ -79,4 +83,10 @@
         </table>
     </div>
 </div>
+
+@if($records->hasPages())
+<div class="mt-4">
+    {{ $records->links() }}
+</div>
+@endif
 @endsection

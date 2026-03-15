@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserMetadata;
 use App\Models\VirtualUser;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class UsersController extends Controller
@@ -18,11 +19,18 @@ class UsersController extends Controller
         'permission_shellTesting', 'permission_lookup',
     ];
 
+    private array $sortableUserCols = ['type','username','nameFirst','nameLast','isActive'];
+
     /**
      * List all users.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $sortCol = $this->resolveSort($request, $this->sortableUserCols) ?: 'nameLast';
+        $sortDir = $this->resolveSortDir($request) ?: 'asc';
+        $perPage = $this->resolvePerPage($request);
+        $page    = $request->integer('page', 1);
+
         // Standard users (joined with userMetadata for permissions)
         $standard = DB::table('users as u')
             ->leftJoin('userMetadata as m', 'u.id', '=', 'm.id')
@@ -38,28 +46,51 @@ class UsersController extends Controller
                 DB::raw('COALESCE(m.permission_shellTesting, 0) as permission_shellTesting'),
                 DB::raw('COALESCE(m.permission_lookup, 0) as permission_lookup')
             )
-            ->orderBy('u.nameLast')->orderBy('u.nameFirst')
             ->get()->map(fn($r) => (array)$r);
 
         // Additional (valve floor) users
-        $additional = AdditionalUser::orderBy('nameLast')->orderBy('nameFirst')
-            ->get()->map(fn($r) => $r->toArray());
+        $additional = AdditionalUser::all()->map(fn($r) => $r->toArray());
 
         // Virtual users
-        $virtual = VirtualUser::orderBy('nameLast')->orderBy('nameFirst')
-            ->get()->map(fn($r) => array_merge(
-                ['username' => '', 'isAdmin' => 0, 'isHidden' => 0,
-                 'permission_loading' => 0, 'permission_unloading' => 0,
-                 'permission_shellTesting' => 0, 'permission_lookup' => 0],
-                $r->toArray()
-            ));
+        $virtual = VirtualUser::all()->map(fn($r) => array_merge(
+            ['username' => '', 'isAdmin' => 0, 'isHidden' => 0,
+             'permission_loading' => 0, 'permission_unloading' => 0,
+             'permission_shellTesting' => 0, 'permission_lookup' => 0],
+            $r->toArray()
+        ));
 
-        $records = $standard->concat($additional)->concat($virtual);
+        // Merge, add derived 'type' field for sorting
+        $all = $standard->concat($additional)->concat($virtual)
+            ->map(function ($r) {
+                $r['type'] = $r['id'] >= 20000 ? 'Virtual' : ($r['id'] >= 10000 ? 'Valve' : 'Standard');
+                return $r;
+            });
+
+        // Sort the full collection in PHP
+        $sorted = $sortDir === 'asc'
+            ? $all->sortBy(fn($r) => strtolower((string)($r[$sortCol] ?? '')))
+            : $all->sortByDesc(fn($r) => strtolower((string)($r[$sortCol] ?? '')));
+        $sorted = $sorted->values();
+
+        $total = $sorted->count();
+        $effectivePerPage = $perPage > 0 ? $perPage : max($total, 1);
+        $effectivePage    = $perPage > 0 ? $page : 1;
+
+        $paginated = new LengthAwarePaginator(
+            $sorted->slice(($effectivePage - 1) * $effectivePerPage, $effectivePerPage)->values(),
+            $total,
+            $effectivePerPage,
+            $effectivePage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         return view('users.index', [
-            'records' => $records,
-            'companies' => Company::orderBy('name')->get(),
-            'user' => $this->currentUser(),
+            'records'        => $paginated,
+            'companies'      => Company::orderBy('name')->get(),
+            'user'           => $this->currentUser(),
+            'currentSort'    => $sortCol,
+            'currentDir'     => $sortDir,
+            'currentPerPage' => $perPage,
         ]);
     }
 

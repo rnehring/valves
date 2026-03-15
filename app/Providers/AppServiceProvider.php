@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\EpicorService;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -17,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Use Tailwind CSS pagination views everywhere
+        Paginator::defaultView('pagination::tailwind');
+        Paginator::defaultSimpleView('pagination::simple-tailwind');
+
         // Share common session data with all views
         view()->composer('*', function ($view) {
             $view->with([

@@ -18,9 +18,14 @@ class UnloadingController extends Controller
      * List: show loaded-but-not-unloaded valves.
      * Reads from MySQL cache — fast.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $records = $this->cacheService->selectValves(
+        $allowedSort = ['Key1','Date01','ShortChar15','ShortChar01','ShortChar03','Character01'];
+        $sortCol = $this->resolveSort($request, $allowedSort);
+        $sortDir = $this->resolveSortDir($request);
+        $perPage = $this->resolvePerPage($request);
+
+        $records = $this->cacheService->paginateValves(
             $this->epicorCompany(),
             $this->epicorTable(),
             where: [
@@ -28,12 +33,19 @@ class UnloadingController extends Controller
                 "ShortChar07 = ''",
                 "ShortChar13 = ''",
             ],
-            orderBy: ['CAST(Key1 AS UNSIGNED) DESC']
+            orderBy: ['CAST(Key1 AS UNSIGNED) DESC'],
+            perPage: $perPage,
+            page:    $request->integer('page', 1),
+            sortCol: $sortCol,
+            sortDir: $sortDir
         );
 
         return view('unloading.index', [
-            'records' => $records,
-            'user'    => $this->currentUser(),
+            'records'        => $records,
+            'user'           => $this->currentUser(),
+            'currentSort'    => $sortCol,
+            'currentDir'     => $sortDir,
+            'currentPerPage' => $perPage,
         ]);
     }
 

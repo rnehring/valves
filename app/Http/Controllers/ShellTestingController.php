@@ -23,7 +23,6 @@ class ShellTestingController extends Controller
         $where = [
             "ShortChar15 != ''",
             "ShortChar07 != ''",
-            "ShortChar13 = ''",
         ];
 
         $serialSearch = $request->input('search_serialNumber');
@@ -31,17 +30,29 @@ class ShellTestingController extends Controller
             $where[] = "Key1 = '" . intval($serialSearch) . "'";
         }
 
-        $records = $this->cacheService->selectValves(
+        $allowedSort = ['Key1','Date01','ShortChar15','ShortChar07','Character01'];
+        $sortCol = $this->resolveSort($request, $allowedSort);
+        $sortDir = $this->resolveSortDir($request);
+        $perPage = $this->resolvePerPage($request);
+
+        $records = $this->cacheService->paginateValves(
             $this->epicorCompany(),
             $this->epicorTable(),
             where:   $where,
-            orderBy: ['CAST(Key1 AS UNSIGNED) DESC']
+            orderBy: ['CAST(Key1 AS UNSIGNED) DESC'],
+            perPage: $perPage,
+            page:    $request->integer('page', 1),
+            sortCol: $sortCol,
+            sortDir: $sortDir
         );
 
         return view('shell-testing.index', [
-            'records'      => $records,
-            'searchSerial' => $serialSearch,
-            'user'         => $this->currentUser(),
+            'records'        => $records,
+            'searchSerial'   => $serialSearch,
+            'user'           => $this->currentUser(),
+            'currentSort'    => $sortCol,
+            'currentDir'     => $sortDir,
+            'currentPerPage' => $perPage,
         ]);
     }
 

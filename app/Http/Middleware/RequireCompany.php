@@ -20,9 +20,15 @@ class RequireCompany
 
         // If user has a fixed company (companyId != 0), they're fine
         if (!empty($user['companyId'])) {
-            // Make sure session_companyId is set
-            if (!$request->session()->has('session_companyId')) {
-                $request->session()->put('session_companyId', $user['companyId']);
+            // Restore any missing company session keys (e.g. after cookie auto-login)
+            if (!$request->session()->has('session_epicorCompany')) {
+                $company = \App\Models\Company::find($user['companyId']);
+                if ($company) {
+                    $request->session()->put('session_companyId',      $company->id);
+                    $request->session()->put('session_epicorCompany',   $company->epicorCompany);
+                    $request->session()->put('session_tableName',       $company->tableName);
+                    $request->session()->put('session_company',         $company->toArray());
+                }
             }
             return $next($request);
         }

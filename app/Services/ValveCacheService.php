@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\EpicorValve;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -88,6 +89,132 @@ class ValveCacheService
             ->toArray();
 
         return array_map(fn($row) => EpicorValve::fromArray($row), $rows);
+    }
+
+    // =========================================================================
+    // Paginated list queries
+    // =========================================================================
+
+    /**
+     * Paginated version of selectValves — returns a LengthAwarePaginator.
+     * Preserves the current request's query string in pagination links.
+     *
+     * @param int    $perPage  Rows per page. Pass 0 for "all records" (single page).
+     * @param string $sortCol  MySQL column name to sort by (must be pre-validated by caller).
+     * @param string $sortDir  'asc' or 'desc'
+     */
+    public function paginateValves(
+        string $epicorCompany,
+        string $tableName,
+        array  $where   = [],
+        array  $orderBy = [],
+        int    $perPage = 25,
+        int    $page    = 1,
+        string $sortCol = '',
+        string $sortDir = 'desc'
+    ): LengthAwarePaginator {
+        $query = DB::table('valve_cache')
+            ->where('epicor_company', $epicorCompany)
+            ->where('table_name', $tableName)
+            ->where('Key1', '!=', '')
+            ->where('Key1', '!=', '0');
+
+        foreach ($where as $clause) {
+            $query->whereRaw($this->normalizeWhere($clause));
+        }
+
+        $total = $query->count();
+
+        // Apply ORDER BY — explicit sort takes precedence over $orderBy array
+        $dir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+        if ($sortCol !== '') {
+            // Numeric key columns need CAST for correct integer sort
+            if (in_array($sortCol, ['Key1', 'Number01', 'Number06'], true)) {
+                $query->orderByRaw("CAST({$sortCol} AS DECIMAL(18,3)) {$dir}");
+            } else {
+                $query->orderBy($sortCol, $dir);
+            }
+        } elseif (!empty($orderBy)) {
+            foreach ($orderBy as $clause) {
+                $query->orderByRaw($this->normalizeOrderBy($clause));
+            }
+        } else {
+            $query->orderBy('Date01', 'desc');
+        }
+
+        // perPage = 0 means "show all" — single page, no pagination bar
+        $effectivePerPage = $perPage > 0 ? $perPage : max($total, 1);
+        $effectivePage    = $perPage > 0 ? $page : 1;
+
+        $rows = $query
+            ->offset(($effectivePage - 1) * $effectivePerPage)
+            ->limit($effectivePerPage)
+            ->get()
+            ->map(fn($row) => EpicorValve::fromArray((array) $row))
+            ->toArray();
+
+        return new LengthAwarePaginator(
+            $rows,
+            $total,
+            $effectivePerPage,
+            $effectivePage,
+            [
+                'path'  => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => request()->query(),
+            ]
+        );
+    }
+
+    /**
+     * Paginated version of selectValveHistory.
+     */
+    public function paginateValveHistory(
+        string $epicorCompany,
+        string $tableName,
+        string $username,
+        int    $perPage = 25,
+        int    $page    = 1,
+        string $sortCol = 'Key1',
+        string $sortDir = 'desc'
+    ): LengthAwarePaginator {
+        $today     = now()->format('Y-m-d');
+        $yesterday = now()->subDay()->format('Y-m-d');
+
+        $query = DB::table('valve_cache')
+            ->where('epicor_company', $epicorCompany)
+            ->where('table_name', $tableName)
+            ->where('ShortChar02', $username)
+            ->whereIn('Date01', [$today, $yesterday]);
+
+        $total = $query->count();
+
+        $dir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+        if (in_array($sortCol, ['Key1', 'Number01'], true)) {
+            $query->orderByRaw("CAST({$sortCol} AS DECIMAL(18,3)) {$dir}");
+        } else {
+            $query->orderBy($sortCol, $dir);
+        }
+
+        $effectivePerPage = $perPage > 0 ? $perPage : max($total, 1);
+        $effectivePage    = $perPage > 0 ? $page : 1;
+
+        $rows = $query
+            ->offset(($effectivePage - 1) * $effectivePerPage)
+            ->limit($effectivePerPage)
+            ->get()
+            ->map(fn($row) => EpicorValve::fromArray((array) $row))
+            ->toArray();
+
+        return new LengthAwarePaginator(
+            $rows,
+            $total,
+            $effectivePerPage,
+            $effectivePage,
+            [
+                'path'  => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => request()->query(),
+            ]
+        );
     }
 
     // =========================================================================

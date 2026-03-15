@@ -105,7 +105,19 @@ class EpicorValve
         $valve = new self();
         foreach (get_object_vars($valve) as $prop => $default) {
             if (array_key_exists($prop, $data)) {
-                $valve->$prop = $data[$prop];
+                $value = $data[$prop];
+                // Coerce null to the property's typed default rather than
+                // throwing a TypeError on non-nullable typed properties.
+                if ($value === null) {
+                    // Nullable props (Date01, Date02) keep null; all others use default
+                    $valve->$prop = $default;
+                } elseif (is_bool($default)) {
+                    $valve->$prop = (bool) $value;
+                } elseif (is_float($default)) {
+                    $valve->$prop = (float) $value;
+                } else {
+                    $valve->$prop = (string) $value;
+                }
             }
         }
         return $valve;

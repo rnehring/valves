@@ -2,7 +2,7 @@
 @section('title', 'Load Valve - Serial #' . $valve->Key1)
 
 @section('content')
-<div class="max-w-2xl mx-auto">
+<div class="max-w-5xl mx-auto">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Valve Loading</h1>
         <div class="flex items-center gap-2 mt-1">
@@ -26,10 +26,10 @@
             </div>
             @endif
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
                 <!-- Loaded By -->
-                <div class="sm:col-span-2">
+                <div class="sm:col-span-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Loaded By <span class="text-red-500">*</span>
                     </label>
@@ -41,7 +41,7 @@
                 </div>
 
                 <!-- Part Number -->
-                <div class="sm:col-span-2">
+                <div class="sm:col-span-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Part Number <span class="text-red-500">*</span>
                     </label>
@@ -124,7 +124,7 @@
                 </div>
 
                 <!-- Comments -->
-                <div class="sm:col-span-2">
+                <div class="sm:col-span-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Comments</label>
                     <textarea name="Character02" rows="3"
                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('Character02') }}</textarea>

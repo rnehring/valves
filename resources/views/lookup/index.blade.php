@@ -87,6 +87,10 @@
                 </select>
             </div>
         </div>
+        {{-- Preserve sort/dir/per_page across search submissions --}}
+        <input type="hidden" name="sort"     value="{{ $currentSort }}">
+        <input type="hidden" name="dir"      value="{{ $currentDir }}">
+        <input type="hidden" name="per_page" value="{{ $currentPerPage }}">
         <div class="flex items-center gap-2">
             <button type="submit" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition">Search</button>
             <a href="{{ route('lookup.index') }}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Reset</a>
@@ -104,28 +108,29 @@
 </div>
 
 @if(isset($records) && count($records) > 0)
+@include('partials.per-page', ['currentPerPage' => $currentPerPage, 'records' => $records])
 <div class="bg-white rounded-xl shadow overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700">
-            <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+            <thead class="text-xs bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th class="px-3 py-3 w-10"></th>
-                    <th class="px-3 py-3">Serial #</th>
-                    <th class="px-3 py-3">Description</th>
-                    <th class="px-3 py-3">Part #</th>
-                    <th class="px-3 py-3">Sales Order #</th>
-                    <th class="px-3 py-3">Batch #1</th>
-                    <th class="px-3 py-3">Date Loaded</th>
-                    <th class="px-3 py-3">Loaded By</th>
-                    <th class="px-3 py-3">Unloaded By</th>
-                    <th class="px-3 py-3">Date Tested</th>
-                    <th class="px-3 py-3">Tested By</th>
-                    <th class="px-3 py-3">Charge Wt</th>
+                    <x-sort-th column="Key1"        label="Serial #"     :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Character01" label="Description"  :currentSort="$currentSort" :currentDir="$currentDir" class="w-28" />
+                    <x-sort-th column="ShortChar01" label="Part #"       :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar11" label="Sales Order #" :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar04" label="Batch #1"     :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Date01"      label="Date Loaded"  :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar15" label="Loaded By"    :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar07" label="Unloaded By"  :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Date02"      label="Date Tested"  :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="ShortChar13" label="Tested By"    :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="Number01"    label="Charge Wt"    :currentSort="$currentSort" :currentDir="$currentDir" class="pr-6" />
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @foreach($records as $valve)
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="{{ $loop->even ? 'bg-gray-100' : 'bg-white' }} hover:bg-blue-50 transition">
                     <td class="px-3 py-2">
                         @if($isAdmin)
                         <a href="{{ route('lookup.edit', $valve->Key1) }}"
@@ -145,7 +150,7 @@
                         @endif
                     </td>
                     <td class="px-3 py-2 font-mono font-semibold text-blue-700">{{ $valve->Key1 }}</td>
-                    <td class="px-3 py-2 text-gray-600 max-w-xs truncate">{{ $valve->Character01 }}</td>
+                    <td class="px-3 py-2 text-gray-600 max-w-0 w-28 truncate" title="{{ $valve->Character01 }}">{{ $valve->Character01 }}</td>
                     <td class="px-3 py-2">{{ $valve->ShortChar01 }}</td>
                     <td class="px-3 py-2">{{ $valve->ShortChar11 }}</td>
                     <td class="px-3 py-2">{{ $valve->ShortChar04 }}</td>
@@ -154,23 +159,22 @@
                     <td class="px-3 py-2">{{ $valve->ShortChar07 }}</td>
                     <td class="px-3 py-2 text-gray-600">{{ $valve->getFormattedDateTested() }}</td>
                     <td class="px-3 py-2">{{ $valve->ShortChar13 }}</td>
-                    <td class="px-3 py-2">{{ $valve->Number01 ? number_format($valve->Number01, 2) : '' }}</td>
+                    <td class="px-3 py-2 pr-6">{{ $valve->Number01 ? rtrim(rtrim(number_format($valve->Number01, 3), '0'), '.') : '' }}</td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
 </div>
-@elseif(request()->hasAny(['search_serialNumber','search_salesOrderNumber','search_description','search_batchNumber1','search_dateLoaded_start','search_loadedBy','search_unloadedBy','search_shellTestedBy']))
+@elseif(isset($records) && count($records) === 0)
 <div class="bg-white rounded-xl shadow p-12 text-center">
     <p class="text-gray-500">No results found.</p>
 </div>
-@else
-<div class="bg-white rounded-xl shadow p-12 text-center">
-    <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-    </svg>
-    <p class="text-gray-500">Use the search form above to find valves.</p>
+@endif
+
+@if(isset($records) && $records->hasPages())
+<div class="mt-4">
+    {{ $records->links() }}
 </div>
 @endif
 @endsection

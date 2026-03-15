@@ -7,20 +7,33 @@ use Illuminate\Http\Request;
 
 class MetadataController extends Controller
 {
+    private array $sortableMetaCols = ['id','category','value','description'];
+
     /**
      * List metadata by category.
      */
     public function index(Request $request)
     {
-        $category = $request->input('category', 'defectsUnloading');
+        $category = $request->input('category', '');
         $categories = Metadata::distinct()->pluck('category')->sort()->values();
-        $records = Metadata::byCategory($category)->orderBy('value')->get();
+
+        $sortCol = $this->resolveSort($request, $this->sortableMetaCols) ?: 'value';
+        $sortDir = $this->resolveSortDir($request) ?: 'asc';
+        $perPage = $this->resolvePerPage($request);
+
+        $query = $category ? Metadata::byCategory($category) : Metadata::query();
+        $records = $query->orderBy($sortCol, $sortDir)->paginate(
+            $perPage > 0 ? $perPage : 9999
+        )->withQueryString();
 
         return view('metadata.index', [
-            'records' => $records,
-            'categories' => $categories,
-            'selectedCategory' => $category,
-            'user' => $this->currentUser(),
+            'records'         => $records,
+            'categories'      => $categories,
+            'selectedCategory'=> $category,
+            'user'            => $this->currentUser(),
+            'currentSort'     => $sortCol,
+            'currentDir'      => $sortDir,
+            'currentPerPage'  => $perPage,
         ]);
     }
 

@@ -2,7 +2,7 @@
 @section('title', 'Shell Test - #' . $valve->Key1)
 
 @section('content')
-<div class="max-w-2xl mx-auto">
+<div class="max-w-5xl mx-auto">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Shell Testing</h1>
         <div class="flex items-center gap-2 mt-1">
@@ -15,7 +15,7 @@
     </div>
 
     <!-- Read-only previous info -->
-    <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-5 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+    <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-5 grid grid-cols-3 sm:grid-cols-6 gap-3 text-sm">
         <div><span class="text-gray-500 block text-xs uppercase tracking-wide">Part #</span><span class="font-medium">{{ $valve->ShortChar01 ?: '—' }}</span></div>
         <div><span class="text-gray-500 block text-xs uppercase tracking-wide">Work Order</span><span class="font-medium">{{ $valve->ShortChar03 ?: '—' }}</span></div>
         <div><span class="text-gray-500 block text-xs uppercase tracking-wide">Loaded By</span><span class="font-medium">{{ $valve->ShortChar15 ?: '—' }}</span></div>
@@ -35,7 +35,7 @@
             </div>
             @endif
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
                 <!-- Tested By -->
                 <div class="sm:col-span-2">
@@ -89,7 +89,7 @@
                 </div>
 
                 <!-- Defect -->
-                <div class="sm:col-span-2">
+                <div class="sm:col-span-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Defect</label>
                     <select name="Character05"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">

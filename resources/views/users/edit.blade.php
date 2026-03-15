@@ -1,14 +1,14 @@
 @extends('layouts.app')
-@section('title', $record['id'] ? 'Edit User' : 'Add User')
+@section('title', $record ? 'Edit User' : 'Add User')
 
 @section('content')
-<div class="max-w-lg mx-auto">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ $record['id'] ? 'Edit User' : 'Add User' }}</h1>
+<div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ $record ? 'Edit User' : 'Add User' }}</h1>
 
     <div class="bg-white rounded-xl shadow p-6">
         <form method="POST" action="{{ route('users.save') }}" class="warn-leave">
             @csrf
-            <input type="hidden" name="id" value="{{ $record['id'] }}">
+            <input type="hidden" name="id" value="{{ $record?->id }}">
 
             @if($errors->any())
             <div class="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">
@@ -16,7 +16,7 @@
             </div>
             @endif
 
-            @if(!$record['id'])
+            @if(!$record)
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Epicor User <span class="text-red-500">*</span>
@@ -37,7 +37,7 @@
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="0">All Companies (Super User)</option>
                     @foreach($companies as $company)
-                        <option value="{{ $company->id }}" {{ (old('companyId', $record['companyId']) == $company->id) ? 'selected' : '' }}>{{ $company->name }}</option>
+                        <option value="{{ $company->id }}" {{ (old('companyId', optional($record)->companyId) == $company->id) ? 'selected' : '' }}>{{ $company->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -48,7 +48,7 @@
                     @foreach(['isActive'=>'Active','isHidden'=>'Hidden','isAdmin'=>'Admin','permission_loading'=>'Loading','permission_unloading'=>'Unloading','permission_shellTesting'=>'Shell Testing','permission_lookup'=>'Lookup'] as $field => $label)
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="{{ $field }}" value="1"
-                               {{ old($field, $record[$field] ?? false) ? 'checked' : '' }}
+                               {{ old($field, optional($record)->$field ?? false) ? 'checked' : '' }}
                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">{{ $label }}</span>
                     </label>

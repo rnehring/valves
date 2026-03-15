@@ -61,9 +61,9 @@ Route::middleware(['auth.valves', 'auth.company'])->group(function () {
 
     // Serial Numbers / Label Printing
     Route::prefix('serial-numbers')->name('serial-numbers.')->group(function () {
-        Route::get('/', [SerialNumberController::class, 'index'])->name('index');
-        Route::post('/lookup', [SerialNumberController::class, 'lookupJob'])->name('lookup');
-        Route::post('/print', [SerialNumberController::class, 'print'])->name('print');
+        Route::get('/',        [SerialNumberController::class, 'index'])->name('index');
+        Route::post('/assign', [SerialNumberController::class, 'assign'])->name('assign');
+        Route::post('/reprint',[SerialNumberController::class, 'reprint'])->name('reprint');
     });
 
     // Admin-only routes

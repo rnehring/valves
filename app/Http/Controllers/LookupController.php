@@ -28,29 +28,46 @@ class LookupController extends Controller
             'search_dateTested_start', 'search_dateTested_stop',
         ]);
 
-        if ($request->isMethod('post') || $request->has('search_serialNumber')) {
-            session(['lookup_search' => $filters]);
-        } else {
-            $filters = session('lookup_search', $filters);
-        }
-
         if ($request->has('reset')) {
             $filters = [];
             session()->forget('lookup_search');
+        } elseif ($request->hasAny(array_keys($filters))) {
+            // Any filter param in the URL → save to session
+            session(['lookup_search' => $filters]);
+        } else {
+            // No search params → restore last search from session
+            $filters = session('lookup_search', []);
         }
 
         $where = $this->buildWhereFromFilters($filters);
 
-        $records = $this->cacheService->selectValves(
+        $allowedSort = ['Key1','Character01','ShortChar01','ShortChar11','ShortChar04',
+                         'Date01','ShortChar15','ShortChar07','Date02','ShortChar13','Number01'];
+        $sortCol = $this->resolveSort($request, $allowedSort);
+        $sortDir = $this->resolveSortDir($request);
+        $perPage = $this->resolvePerPage($request);
+
+        $records = $this->cacheService->paginateValves(
             $this->epicorCompany(),
             $this->epicorTable(),
             where:   $where,
             orderBy: ['Date01 DESC', 'CAST(Key1 AS UNSIGNED) DESC'],
-            limit:   500
+            perPage: $perPage,
+            page:    $request->integer('page', 1),
+            sortCol: $sortCol,
+            sortDir: $sortDir
         );
 
         if ($request->has('search_export') && ($this->currentUser()['isAdmin'] ?? false)) {
-            return $this->exportCsv($records);
+            // For export, fetch all matching records (no pagination)
+            $allRecords = $this->cacheService->selectValves(
+                $this->epicorCompany(),
+                $this->epicorTable(),
+                where:   $where,
+                orderBy: ['Date01 DESC', 'CAST(Key1 AS UNSIGNED) DESC'],
+                limit:   9999
+            );
+            return $this->exportCsv($allRecords);
         }
 
         $user = $this->currentUser();
@@ -60,6 +77,9 @@ class LookupController extends Controller
             'virtualUsers' => $this->virtualUsers(),
             'user'         => $user,
             'isAdmin'      => (bool) ($user['isAdmin'] ?? false),
+            'currentSort'  => $sortCol,
+            'currentDir'   => $sortDir,
+            'currentPerPage' => $perPage,
         ]);
     }
 
@@ -107,6 +127,8 @@ class LookupController extends Controller
 
         return view('lookup.edit', [
             'valve'               => $valve,
+            'epicorCompany'       => $epicorCompany,
+            'tableName'           => $tableName,
             'nilcorParts'         => ($epicorCompany === '20') ? Metadata::nilcorParts() : collect(),
             'durcorParts'         => ($epicorCompany === '10' && $tableName === 'Ice.UD02') ? Metadata::durcorParts() : collect(),
             'defectsUnloading'    => Metadata::unloadingDefects(),

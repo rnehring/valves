@@ -2,7 +2,7 @@
 @section('title', isset($record->id) ? 'Edit Metadata' : 'Add Metadata')
 
 @section('content')
-<div class="max-w-md mx-auto">
+<div class="max-w-5xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ isset($record->id) ? 'Edit Metadata' : 'Add Metadata' }}</h1>
 
     <div class="bg-white rounded-xl shadow p-6">

@@ -18,36 +18,42 @@
     <form method="GET" action="{{ route('metadata.index') }}" class="flex items-end gap-3">
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
-            <select name="search_category"
+            <select name="category"
                     class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-48"
                     onchange="this.form.submit()">
                 <option value="">All Categories</option>
                 @foreach($categories as $cat)
-                <option value="{{ $cat }}" {{ request('search_category') == $cat ? 'selected' : '' }}>
-                {{ $cat }}
+                <option value="{{ $cat }}" {{ $selectedCategory === $cat ? 'selected' : '' }}>
+                    {{ $cat }}
                 </option>
                 @endforeach
             </select>
         </div>
+        {{-- Preserve sort/dir/per_page across category change --}}
+        <input type="hidden" name="sort"     value="{{ $currentSort }}">
+        <input type="hidden" name="dir"      value="{{ $currentDir }}">
+        <input type="hidden" name="per_page" value="{{ $currentPerPage }}">
         <a href="{{ route('metadata.index') }}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Reset</a>
     </form>
 </div>
 
+@include('partials.per-page', ['currentPerPage' => $currentPerPage, 'records' => $records])
+
 <div class="bg-white rounded-xl shadow overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-700">
-            <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+            <thead class="text-xs bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th class="px-4 py-3 w-10"></th>
-                    <th class="px-4 py-3">ID</th>
-                    <th class="px-4 py-3">Category</th>
-                    <th class="px-4 py-3">Value</th>
-                    <th class="px-4 py-3">Description</th>
+                    <x-sort-th column="id"          label="ID"          :currentSort="$currentSort" :currentDir="$currentDir" class="w-16" />
+                    <x-sort-th column="category"    label="Category"    :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="value"       label="Value"       :currentSort="$currentSort" :currentDir="$currentDir" />
+                    <x-sort-th column="description" label="Description" :currentSort="$currentSort" :currentDir="$currentDir" />
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($records as $record)
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="{{ $loop->even ? 'bg-gray-100' : 'bg-white' }} hover:bg-blue-50 transition">
                     <td class="px-4 py-3">
                         <a href="{{ route('metadata.edit', $record->id) }}"
                            class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition">
@@ -74,4 +80,10 @@
         </table>
     </div>
 </div>
+
+@if($records->hasPages())
+<div class="mt-4">
+    {{ $records->links() }}
+</div>
+@endif
 @endsection

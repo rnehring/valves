@@ -1,286 +1,260 @@
 @extends('layouts.app')
 
-@section('title', 'Serial Number Labels')
+@section('title', 'Serial Numbers')
 
 @section('content')
-<div class="max-w-2xl mx-auto">
+<div class="max-w-3xl mx-auto space-y-6">
 
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">Serial Number Labels</h1>
+    {{-- ====================================================================
+         SECTION 1 — ASSIGN JOB NUMBER + PRINT BOX LABELS
+    ===================================================================== --}}
+    <div x-data="serialAssign()">
 
-    <!-- Mode Tabs -->
-    <div x-data="{ tab: 'job', lastPrint: null }">
-
-        <div class="flex border-b border-gray-300 mb-6">
-            <button @click="tab = 'job'"
-                    :class="tab === 'job' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                    class="px-5 py-2.5 text-sm font-medium transition">
-                Job Lookup
-            </button>
-            <button @click="tab = 'manual'"
-                    :class="tab === 'manual' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                    class="px-5 py-2.5 text-sm font-medium transition">
-                Manual Entry
-            </button>
+        {{-- Instruction banner --}}
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <svg class="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <p class="font-semibold text-blue-800 text-sm">Add Job Number and as many serial numbers as needed below:</p>
+                <p class="text-blue-600 text-xs mt-0.5">Press <kbd class="bg-blue-100 border border-blue-300 rounded px-1.5 py-0.5 font-mono text-xs">Tab</kbd> on a serial number field to add another one</p>
+            </div>
         </div>
 
-        <!-- ================================================================
-             JOB LOOKUP TAB
-        ================================================================ -->
-        <div x-show="tab === 'job'" x-data="jobLookup()" @print-success.window="lastPrint = $event.detail">
+        {{-- Form --}}
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="space-y-4">
 
-            <div class="bg-white rounded-lg shadow p-5 mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Job Number</label>
-                <div class="flex gap-2">
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-sm font-bold text-gray-700 uppercase flex-shrink-0">Loaded By</label>
                     <input type="text"
-                           x-model="jobNumber"
-                           @keydown.enter="lookup"
-                           placeholder="e.g. J00012345"
-                           class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm uppercase
-                                  focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <button @click="lookup"
-                            :disabled="loading || !jobNumber"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded transition">
-                        <span x-show="!loading">Look Up</span>
-                        <span x-show="loading">Searching…</span>
-                    </button>
+                           x-model="emp"
+                           placeholder="Employee badge #"
+                           class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-            </div>
 
-            <div x-show="result" class="bg-white rounded-lg shadow p-5 mb-4">
-                <template x-if="result && result.found">
-                    <div>
-                        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
-                            <div class="bg-gray-50 rounded p-3">
-                                <div class="text-gray-500 text-xs mb-1">Part Number</div>
-                                <div class="font-semibold text-gray-800" x-text="result.part_number"></div>
-                            </div>
-                            <div class="bg-gray-50 rounded p-3">
-                                <div class="text-gray-500 text-xs mb-1">Label Type</div>
-                                <div class="font-semibold"
-                                     :class="result.supported ? 'text-green-700' : 'text-red-600'"
-                                     x-text="result.label_type"></div>
-                            </div>
-                        </div>
+                <div class="flex items-center gap-4">
+                    <label class="w-36 text-sm font-bold text-gray-700 uppercase flex-shrink-0">Job Number</label>
+                    <input type="text"
+                           x-model="job"
+                           placeholder="e.g. 123456-1"
+                           class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
 
-                        <template x-if="!result.supported">
-                            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-3 text-sm mb-4">
-                                No label template for this part number prefix. Supported: BL, SLV, FA, FJ.
-                            </div>
-                        </template>
-
-                        <template x-if="result.supported">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Print Quantity</label>
-                                <div class="flex gap-2 items-center">
-                                    <input type="number"
-                                           x-model.number="printQty"
-                                           min="1" max="9999"
-                                           class="w-28 border border-gray-300 rounded px-3 py-2 text-sm
-                                                  focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                    <span class="text-sm text-gray-500">
-                                        (Epicor production qty: <span x-text="result.quantity"></span>)
-                                    </span>
-                                </div>
-                                <button @click="print"
-                                        :disabled="printing || printQty < 1"
-                                        class="mt-3 px-5 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium rounded transition">
-                                    <span x-show="!printing">🖨 Print Labels</span>
-                                    <span x-show="printing">Printing…</span>
-                                </button>
-                            </div>
-                        </template>
+                {{-- Dynamic serial number inputs --}}
+                <template x-for="(serial, index) in serials" :key="index">
+                    <div class="flex items-center gap-4">
+                        <label class="w-36 text-sm font-bold text-gray-700 uppercase flex-shrink-0">
+                            Serial Number
+                        </label>
+                        <input type="text"
+                               x-model="serials[index]"
+                               @keydown.tab="handleTab(index, $event)"
+                               :id="'serial-' + index"
+                               class="serial-input flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Serial #" />
                     </div>
                 </template>
 
-                <template x-if="result && !result.found">
-                    <div class="text-red-600 text-sm" x-text="result.message"></div>
-                </template>
             </div>
 
-            <div x-show="printResult"
-                 class="rounded-lg p-4 text-sm"
-                 :class="printResult && printResult.success
-                     ? 'bg-green-50 border border-green-300 text-green-800'
-                     : 'bg-red-50 border border-red-300 text-red-800'">
-                <span x-text="printResult ? printResult.message : ''"></span>
+            <div class="mt-5 pt-4 border-t border-gray-100">
+                <button @click="submit"
+                        :disabled="loading"
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-bold uppercase rounded transition">
+                    <span x-show="!loading">Submit</span>
+                    <span x-show="loading">Processing…</span>
+                </button>
             </div>
         </div>
 
+        {{-- Result display --}}
+        <div x-show="result" x-cloak class="space-y-3">
 
-        <!-- ================================================================
-             MANUAL ENTRY TAB
-        ================================================================ -->
-        <div x-show="tab === 'manual'" x-data="manualPrint()" @print-success.window="lastPrint = $event.detail">
-
-            <div class="bg-white rounded-lg shadow p-5">
-                <div class="space-y-4">
+            {{-- Error (e.g. validation failure) --}}
+            <template x-if="result && result.error">
+                <div class="bg-red-50 border border-red-300 rounded-lg p-4 flex items-start gap-3 animate-shake">
+                    <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Number</label>
-                        <input type="text"
-                               x-model="jobNumber"
-                               placeholder="e.g. J00012345"
-                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm uppercase
-                                      focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <p class="font-bold text-red-700 uppercase text-sm">Processing Failure</p>
+                        <p class="text-red-600 text-sm mt-1" x-text="result.error"></p>
                     </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Part Number</label>
-                        <input type="text"
-                               x-model="partNumber"
-                               @input="partNumber = partNumber.toUpperCase()"
-                               placeholder="e.g. FJ-100-A or BL-200-X"
-                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm uppercase
-                                      focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        <p class="text-xs text-gray-400 mt-1">
-                            Label type: <span class="font-medium text-gray-600" x-text="labelType"></span>
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Print Quantity</label>
-                        <input type="number"
-                               x-model.number="quantity"
-                               min="1" max="9999"
-                               class="w-28 border border-gray-300 rounded px-3 py-2 text-sm
-                                      focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-
-                    <button @click="print"
-                            :disabled="printing || !jobNumber || !partNumber || quantity < 1 || labelType === 'Unknown'"
-                            class="px-5 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium rounded transition">
-                        <span x-show="!printing">🖨 Print Labels</span>
-                        <span x-show="printing">Printing…</span>
-                    </button>
                 </div>
-            </div>
+            </template>
 
-            <div x-show="printResult"
-                 class="mt-4 rounded-lg p-4 text-sm"
-                 :class="printResult && printResult.success
-                     ? 'bg-green-50 border border-green-300 text-green-800'
-                     : 'bg-red-50 border border-red-300 text-red-800'">
-                <span x-text="printResult ? printResult.message : ''"></span>
-            </div>
+            {{-- Successes --}}
+            <template x-if="result && result.success && result.success.length > 0">
+                <div class="bg-green-50 border border-green-400 rounded-lg p-4">
+                    <p class="font-bold text-green-800 uppercase text-sm mb-2">✓ Job Numbers Successfully Added To These Serial Numbers:</p>
+                    <ul class="space-y-1">
+                        <template x-for="s in result.success" :key="s">
+                            <li class="bg-white border border-green-300 rounded px-3 py-1.5 text-center font-bold text-lg text-gray-800" x-text="s"></li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
+            {{-- Failures --}}
+            <template x-if="result && result.fail && result.fail.length > 0">
+                <div class="bg-red-50 border border-red-400 rounded-lg p-4">
+                    <p class="font-bold text-red-800 uppercase text-sm mb-2">✗ These Serial Numbers Already Had Job Numbers and Remain Unchanged:</p>
+                    <ul class="space-y-1">
+                        <template x-for="s in result.fail" :key="s">
+                            <li class="bg-white border border-red-300 rounded px-3 py-1.5 text-center font-bold text-lg text-gray-800" x-text="s"></li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
         </div>
 
-        <!-- Last Print Summary -->
-        <div x-show="lastPrint" class="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700">
-            <div class="font-medium text-gray-500 uppercase text-xs mb-2 tracking-wide">Last Print</div>
-            <div class="grid grid-cols-3 gap-4">
-                <div>
-                    <div class="text-gray-400 text-xs">Job</div>
-                    <div class="font-semibold" x-text="lastPrint ? lastPrint.job_number : ''"></div>
-                </div>
-                <div>
-                    <div class="text-gray-400 text-xs">Part Number</div>
-                    <div class="font-semibold" x-text="lastPrint ? lastPrint.part_number : ''"></div>
-                </div>
-                <div>
-                    <div class="text-gray-400 text-xs">Quantity</div>
-                    <div class="font-semibold" x-text="lastPrint ? lastPrint.quantity : ''"></div>
-                </div>
+    </div>{{-- end serialAssign --}}
+
+
+    {{-- ====================================================================
+         SECTION 2 — REPRINT BOX LABEL
+    ===================================================================== --}}
+    <div x-data="reprintLabel()" class="bg-blue-100 border border-blue-300 rounded-lg p-5">
+
+        <h2 class="text-base font-bold text-blue-900 uppercase mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a1 1 0 001 1h8a1 1 0 001-1v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a1 1 0 00-1-1H6a1 1 0 00-1 1zm2 0h6v3H7V4zm-1 9v-1h8v2H6v-1zm0 0"/>
+            </svg>
+            Need to reprint a box label?
+        </h2>
+
+        {{-- Reprint result --}}
+        <template x-if="result">
+            <div class="mb-4 rounded-lg p-3 flex items-center gap-2 text-sm font-medium"
+                 :class="result.success ? 'bg-green-100 border border-green-400 text-green-800' : 'bg-red-100 border border-red-400 text-red-800'">
+                <span x-text="result.success ? '✓' : '✗'"></span>
+                <span x-text="result.message"></span>
             </div>
+        </template>
+
+        <div class="space-y-3">
+            <div class="flex items-center gap-4">
+                <label class="w-36 text-sm font-bold text-gray-700 uppercase flex-shrink-0">Job Number</label>
+                <input type="text"
+                       x-model="job"
+                       placeholder="e.g. 123456-1"
+                       class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <div class="flex items-center gap-4">
+                <label class="w-36 text-sm font-bold text-gray-700 uppercase flex-shrink-0">Serial Number</label>
+                <input type="text"
+                       x-model="serial"
+                       placeholder="Serial #"
+                       class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <button @click="submit"
+                    :disabled="loading || !job || !serial"
+                    class="mt-1 px-6 py-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-bold uppercase rounded transition">
+                <span x-show="!loading">Reprint</span>
+                <span x-show="loading">Sending…</span>
+            </button>
         </div>
 
-    </div><!-- end outer x-data -->
+    </div>
+
 </div>
 @endsection
 
+
 @push('scripts')
 <script>
-const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
-
-function getLabelType(partNumber) {
-    const pn = (partNumber || '').toUpperCase();
-    if (pn.startsWith('BL'))  return 'BlueLine';
-    if (pn.startsWith('SLV')) return 'PTFE Bellow Liner';
-    if (pn.startsWith('FA'))  return 'FlexArmor';
-    if (pn.startsWith('FJ'))  return 'Flexijoint';
-    return 'Unknown';
-}
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
 async function postJson(url, body) {
     const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
         body: JSON.stringify(body),
     });
     return res.json();
 }
 
-function jobLookup() {
+function serialAssign() {
     return {
-        jobNumber: '',
+        emp:     '',
+        job:     '',
+        serials: [''],   // always start with one blank input
         loading: false,
-        printing: false,
-        result: null,
-        printResult: null,
-        printQty: 1,
+        result:  null,
 
-        async lookup() {
-            if (!this.jobNumber) return;
-            this.loading = true;
-            this.result = null;
-            this.printResult = null;
-            try {
-                this.result = await postJson('{{ route("serial-numbers.lookup") }}', { job_number: this.jobNumber });
-                if (this.result.found) this.printQty = this.result.quantity || 1;
-            } catch {
-                this.result = { found: false, message: 'Request failed. Please try again.' };
-            } finally {
-                this.loading = false;
+        /**
+         * Tab on the last serial input → add a new blank input and focus it.
+         * Tab on any other input → let the browser handle it normally.
+         */
+        handleTab(index, event) {
+            if (index === this.serials.length - 1) {
+                event.preventDefault();
+                this.serials.push('');
+                this.$nextTick(() => {
+                    const inputs = this.$root.querySelectorAll('.serial-input');
+                    if (inputs[inputs.length - 1]) {
+                        inputs[inputs.length - 1].focus();
+                    }
+                });
             }
         },
 
-        async print() {
-            this.printing = true;
-            this.printResult = null;
+        async submit() {
+            if (!this.emp) {
+                alert('You must enter your employee badge number!');
+                return;
+            }
+            if (!this.job) {
+                alert('You must enter a job number!');
+                return;
+            }
+
+            const serialList = this.serials.filter(s => s.trim() !== '').join(',');
+            if (!serialList) {
+                alert('You must enter at least one serial number!');
+                return;
+            }
+
+            this.loading = true;
+            this.result  = null;
+
             try {
-                const data = await postJson('{{ route("serial-numbers.print") }}', {
-                    job_number:  this.result.job_number,
-                    part_number: this.result.part_number,
-                    quantity:    this.printQty,
+                this.result = await postJson('{{ route("serial-numbers.assign") }}', {
+                    emp:     this.emp,
+                    job:     this.job,
+                    serials: serialList,
                 });
-                this.printResult = data;
-                if (data.success) {
-                    window.dispatchEvent(new CustomEvent('print-success', { detail: data }));
-                }
             } catch {
-                this.printResult = { success: false, message: 'Print request failed.' };
+                this.result = { error: 'AJAX call failure. Please try again.', success: [], fail: [] };
             } finally {
-                this.printing = false;
+                this.loading = false;
             }
         },
     };
 }
 
-function manualPrint() {
+function reprintLabel() {
     return {
-        jobNumber: '',
-        partNumber: '',
-        quantity: 1,
-        printing: false,
-        printResult: null,
+        job:     '',
+        serial:  '',
+        loading: false,
+        result:  null,
 
-        get labelType() { return getLabelType(this.partNumber); },
+        async submit() {
+            this.loading = true;
+            this.result  = null;
 
-        async print() {
-            this.printing = true;
-            this.printResult = null;
             try {
-                const data = await postJson('{{ route("serial-numbers.print") }}', {
-                    job_number:  this.jobNumber,
-                    part_number: this.partNumber,
-                    quantity:    this.quantity,
+                this.result = await postJson('{{ route("serial-numbers.reprint") }}', {
+                    job:    this.job,
+                    serial: this.serial,
                 });
-                this.printResult = data;
-                if (data.success) {
-                    window.dispatchEvent(new CustomEvent('print-success', { detail: data }));
-                }
             } catch {
-                this.printResult = { success: false, message: 'Print request failed.' };
+                this.result = { success: false, message: 'Request failed. Please try again.' };
             } finally {
-                this.printing = false;
+                this.loading = false;
             }
         },
     };
