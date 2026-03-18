@@ -68,17 +68,17 @@ class ShellTestingController extends Controller
         );
 
         if (!$valve) {
-            return redirect()->route('shellTesting.index')
+            return redirect()->route('shell-testing.index')
                 ->with('message_error', 'Serial number not found.');
         }
 
         if (!empty($valve->ShortChar13)) {
-            return redirect()->route('shellTesting.index')
+            return redirect()->route('shell-testing.index')
                 ->with('message_error', "Serial #$serialNumber has already been shell tested.");
         }
 
         if (empty($valve->ShortChar07)) {
-            return redirect()->route('shellTesting.index')
+            return redirect()->route('shell-testing.index')
                 ->with('message_error', "Serial #$serialNumber has not been unloaded yet.");
         }
 
@@ -120,7 +120,7 @@ class ShellTestingController extends Controller
         $this->epicorService->updateValve($this->epicorTable(), $data, $serialNumber);
         $this->cacheService->upsertValve($this->epicorCompany(), $this->epicorTable(), $data);
 
-        return redirect()->route('shellTesting.index')
+        return redirect()->route('shell-testing.index')
             ->with('message_success', 'Shell testing record saved successfully.');
     }
 }
