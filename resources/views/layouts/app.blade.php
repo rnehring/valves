@@ -37,6 +37,11 @@
                 <!-- Nav Links -->
                 @if($sessionUser)
                 <div class="hidden md:flex items-center space-x-1">
+                    <a href="{{ route('dashboard') }}"
+                       class="px-3 py-2 rounded text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition
+                              {{ request()->routeIs('dashboard') ? 'bg-blue-700 !text-white' : '' }}">
+                        Dashboard
+                    </a>
                     @if($sessionUser['isAdmin'] || $sessionUser['permission_loading'])
                     <a href="{{ route('loading.index') }}"
                        class="px-3 py-2 rounded text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition
@@ -126,7 +131,8 @@
         <!-- Mobile menu -->
         <div id="mobile-menu" class="hidden md:hidden px-4 pb-3">
             @if($sessionUser)
-                @if($sessionUser['isAdmin'] || $sessionUser['permission_loading'])
+                <a href="{{ route('dashboard') }}" class="block px-3 py-2 text-sm text-gray-300 hover:text-white">Dashboard</a>
+            @if($sessionUser['isAdmin'] || $sessionUser['permission_loading'])
                     <a href="{{ route('loading.index') }}" class="block px-3 py-2 text-sm text-gray-300 hover:text-white">Loading</a>
                 @endif
                 @if($sessionUser['isAdmin'] || $sessionUser['permission_unloading'])

@@ -10,6 +10,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\MetadataController;
 use App\Http\Controllers\CompanySelectController;
 use App\Http\Controllers\SerialNumberController;
+use App\Http\Controllers\DashboardController;
 
 // Auth routes (public)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -26,7 +27,7 @@ Route::middleware('auth.valves')->group(function () {
 Route::middleware(['auth.valves', 'auth.company'])->group(function () {
 
     // Dashboard / home
-    Route::get('/', fn() => redirect()->route('loading.index'));
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Loading
     Route::prefix('loading')->name('loading.')->middleware('can.permission:permission_loading')->group(function () {
